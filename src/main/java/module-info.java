@@ -4,5 +4,6 @@ module com.gmail.rezamoeinpe.persiancat {
     requires org.slf4j;
 
     exports com.gmail.rezamoeinpe.persiancat;
+    exports com.gmail.rezamoeinpe.persiancat.method;
     exports com.gmail.rezamoeinpe.persiancat.exceptions;
 }
