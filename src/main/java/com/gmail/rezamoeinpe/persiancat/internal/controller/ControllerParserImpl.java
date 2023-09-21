@@ -1,13 +1,13 @@
-package com.gmail.rezamoeinpe.persiancat.internal;
+package com.gmail.rezamoeinpe.persiancat.internal.controller;
 
-import com.gmail.rezamoeinpe.persiancat.*;
 import com.gmail.rezamoeinpe.persiancat.exceptions.InvalidControllerException;
 import com.gmail.rezamoeinpe.persiancat.exceptions.MethodNotFound;
 import com.gmail.rezamoeinpe.persiancat.exceptions.NotRestController;
 import com.gmail.rezamoeinpe.persiancat.exceptions.NounUniqueURIMapping;
-import com.gmail.rezamoeinpe.persiancat.method.GetMethod;
-import com.gmail.rezamoeinpe.persiancat.method.PostMethod;
-import com.gmail.rezamoeinpe.persiancat.method.RestController;
+import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
+import com.gmail.rezamoeinpe.persiancat.rest.method.GetMethod;
+import com.gmail.rezamoeinpe.persiancat.rest.method.PostMethod;
+import com.gmail.rezamoeinpe.persiancat.rest.method.RestController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +18,7 @@ import java.util.*;
 public class ControllerParserImpl implements ControllerParser {
     public static final Logger LOGGER = LoggerFactory.getLogger(ControllerParserImpl.class);
 
-    private final Set<Class<? extends Annotation>> VALID_REST_METHODS = Set.of(
+    private static final Set<Class<? extends Annotation>> VALID_REST_METHODS = Set.of(
             GetMethod.class,
             PostMethod.class);
 
@@ -73,10 +73,10 @@ public class ControllerParserImpl implements ControllerParser {
         for (Annotation annotation : method.getAnnotations()) {
 
             if (annotation instanceof GetMethod restMethodAnnotation) {
-                info = new ControllerInfo.MethodInfo(MethodName.GET, emptyToFSlash(restMethodAnnotation.value()), method);
+                info = new ControllerInfo.MethodInfo(HttpMethod.GET, emptyToFSlash(restMethodAnnotation.value()), method);
                 numberOfRestMethod++;
             } else if (annotation instanceof PostMethod restMethodAnnotation) {
-                info = new ControllerInfo.MethodInfo(MethodName.POST, emptyToFSlash(restMethodAnnotation.value()), method);
+                info = new ControllerInfo.MethodInfo(HttpMethod.POST, emptyToFSlash(restMethodAnnotation.value()), method);
                 numberOfRestMethod++;
             }
 

@@ -1,15 +1,15 @@
 package com.gmail.rezamoeinpe.persiancat.test.controller;
 
-import com.gmail.rezamoeinpe.persiancat.*;
 import com.gmail.rezamoeinpe.persiancat.exceptions.InvalidControllerException;
 import com.gmail.rezamoeinpe.persiancat.exceptions.MethodNotFound;
 import com.gmail.rezamoeinpe.persiancat.exceptions.NotRestController;
 import com.gmail.rezamoeinpe.persiancat.exceptions.NounUniqueURIMapping;
-import com.gmail.rezamoeinpe.persiancat.internal.ControllerParser;
-import com.gmail.rezamoeinpe.persiancat.internal.ControllerParserImpl;
-import com.gmail.rezamoeinpe.persiancat.method.GetMethod;
-import com.gmail.rezamoeinpe.persiancat.method.PostMethod;
-import com.gmail.rezamoeinpe.persiancat.method.RestController;
+import com.gmail.rezamoeinpe.persiancat.internal.controller.ControllerParser;
+import com.gmail.rezamoeinpe.persiancat.internal.controller.ControllerParserImpl;
+import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
+import com.gmail.rezamoeinpe.persiancat.rest.method.GetMethod;
+import com.gmail.rezamoeinpe.persiancat.rest.method.PostMethod;
+import com.gmail.rezamoeinpe.persiancat.rest.method.RestController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -18,7 +18,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-public class ControllerParserTest {
+class ControllerParserTest {
 
     ControllerParser controllerChecker;
 
@@ -112,7 +112,7 @@ public class ControllerParserTest {
         assertThat(controllerInfo).isNotNull();
         assertThat(controllerInfo.prefixPath()).isEmpty();
         assertThat(controllerInfo.methods()).hasSize(1);
-        assertThat(controllerInfo.methods()).allMatch(m -> m.name().equals(MethodName.POST));
+        assertThat(controllerInfo.methods()).allMatch(m -> m.name().equals(HttpMethod.POST));
         assertThat(controllerInfo.methods()).allMatch(m -> m.path().equals("/"));
     }
 
@@ -138,8 +138,8 @@ public class ControllerParserTest {
         assertThat(controllerInfo.prefixPath()).isEqualTo("/api/mock");
         assertThat(controllerInfo.methods()).hasSize(2);
 
-        assertThat(controllerInfo.methods()).anyMatch(methodInfo -> methodInfo.path().equals("/save") && methodInfo.name().equals(MethodName.POST));
-        assertThat(controllerInfo.methods()).anyMatch(methodInfo -> methodInfo.path().equals("/") && methodInfo.name().equals(MethodName.GET));
+        assertThat(controllerInfo.methods()).anyMatch(methodInfo -> methodInfo.path().equals("/save") && methodInfo.name().equals(HttpMethod.POST));
+        assertThat(controllerInfo.methods()).anyMatch(methodInfo -> methodInfo.path().equals("/") && methodInfo.name().equals(HttpMethod.GET));
 
     }
 }

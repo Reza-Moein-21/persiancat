@@ -1,4 +1,4 @@
-package com.gmail.rezamoeinpe.persiancat.internal;
+package com.gmail.rezamoeinpe.persiancat.internal.controller;
 
 import com.gmail.rezamoeinpe.persiancat.exceptions.InvalidControllerException;
 

@@ -1,4 +1,4 @@
-package com.gmail.rezamoeinpe.persiancat.method;
+package com.gmail.rezamoeinpe.persiancat.rest.method;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -7,6 +7,6 @@ import java.lang.annotation.Target;
 
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface PostMethod {
+public @interface GetMethod {
     String value() default "/";
 }
