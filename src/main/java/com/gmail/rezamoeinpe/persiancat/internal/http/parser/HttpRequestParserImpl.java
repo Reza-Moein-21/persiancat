@@ -4,6 +4,7 @@ import com.gmail.rezamoeinpe.persiancat.internal.http.HttpHeader;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpProtocol;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpRequest;
+import com.gmail.rezamoeinpe.persiancat.internal.http.exception.InvalidHttpMethodException;
 import com.gmail.rezamoeinpe.persiancat.internal.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,8 +23,8 @@ public class HttpRequestParserImpl implements HttpRequestParser {
     private String path;
     private HttpProtocol protocol;
 
-    private Set<HttpHeader> headers = new HashSet<>();
-    private List<String> body = new ArrayList<>();
+    private final Set<HttpHeader> headers = new HashSet<>();
+    private final List<String> body = new ArrayList<>();
 
     @Override
     public HttpRequest pars(InputStream inputStream) {
@@ -40,26 +41,24 @@ public class HttpRequestParserImpl implements HttpRequestParser {
 
                 LOGGER.trace("Reading lineNo {}", lineNo);
 
-                if (lineNo == 1) {
+                if (lineNo == 1)
                     processLineOne(line);
-                    continue;
-                }
-
-                if (isEmptyLine(line)) {
+                else if (isEmptyLine(line))
                     emptyLineDetected = true;
-                    continue;
-                }
-
-                if (emptyLineDetected)
+                else if (emptyLineDetected)
                     processBody(line);
                 else
                     processHeader(line);
             }
 
+            if (lineNo == 0)
+                throw new IllegalArgumentException();
+
         } catch (IOException e) {
+            throw new IllegalStateException(e.getMessage());
         }
 
-        return new HttpRequest(this.method, this.path, this.protocol, this.headers);
+        return new HttpRequest(this.method, this.path, this.protocol, this.headers, this.body);
     }
 
     private void processHeader(String line) {
@@ -78,22 +77,14 @@ public class HttpRequestParserImpl implements HttpRequestParser {
 
     private void processLineOne(String line1) {
         var lines = line1.split(" ");
-        if (lines.length < 2) {
-            parserExceptionThrower(1, "Invalid Http");
-        }
-
         var l1 = lines[0];
         try {
             this.method = HttpMethod.valueOf(l1);
         } catch (IllegalArgumentException e) {
-            parserExceptionThrower(1, "Invalid HttpMethod" + " => " + l1);
+            throw new InvalidHttpMethodException();
         }
 
         this.path = lines[1];
         this.protocol = HttpProtocol.findByTitle(lines[2]).orElseThrow();
-    }
-
-    private void parserExceptionThrower(int lineNumber, String message) {
-        throw new IllegalArgumentException("Error in line: " + lineNumber + ": " + message);
     }
 }

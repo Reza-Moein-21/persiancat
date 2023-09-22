@@ -65,11 +65,13 @@ class ControllerParserTest {
         class MockRestController {
             @GetMethod
             @PostMethod
+            @SuppressWarnings("unused")
             public void mock() {
             }
         }
 
-        assertThatThrownBy(() -> controllerChecker.parsController(new MockRestController()))
+        var mockRestController = new MockRestController();
+        assertThatThrownBy(() -> controllerChecker.parsController(mockRestController))
                 .isInstanceOf(InvalidControllerException.class)
                 .hasCauseInstanceOf(NounUniqueURIMapping.class)
                 .hasMessageContaining("URL mapping should be unique");
@@ -80,20 +82,23 @@ class ControllerParserTest {
         @RestController
         class MockRestController {
             @GetMethod
+            @SuppressWarnings("unused")
             public void mock() {
             }
 
             @GetMethod("")
+            @SuppressWarnings("unused")
             public void mock2() {
             }
 
             @PostMethod
+            @SuppressWarnings("unused")
             public void mock3() {
             }
 
         }
-
-        assertThatThrownBy(() -> controllerChecker.parsController(new MockRestController()))
+        var mockRestController = new MockRestController();
+        assertThatThrownBy(() -> controllerChecker.parsController(mockRestController))
                 .isInstanceOf(InvalidControllerException.class)
                 .hasCauseInstanceOf(NounUniqueURIMapping.class)
                 .hasMessageContaining("URL mapping should be unique");
@@ -104,6 +109,7 @@ class ControllerParserTest {
         @RestController
         class MockValidRestController {
             @PostMethod
+            @SuppressWarnings("unused")
             public void mock() {
             }
         }
@@ -122,11 +128,13 @@ class ControllerParserTest {
         @RestController("/api/mock")
         class MockValidRestController {
             @PostMethod("/save")
+            @SuppressWarnings("unused")
             public Object save(Object mockBody) {
                 return mockBody;
             }
 
             @GetMethod
+            @SuppressWarnings("unused")
             public List<Object> search(String searchQuery) {
                 return List.of(searchQuery);
             }
