@@ -6,4 +6,5 @@ module com.gmail.rezamoeinpe.persiancat {
     exports com.gmail.rezamoeinpe.persiancat;
     exports com.gmail.rezamoeinpe.persiancat.rest.method;
     exports com.gmail.rezamoeinpe.persiancat.exceptions;
+    exports com.gmail.rezamoeinpe.persiancat.exceptions.base;
 }

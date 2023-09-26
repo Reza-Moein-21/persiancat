@@ -1,6 +1,6 @@
 package com.gmail.rezamoeinpe.persiancat;
 
-import com.gmail.rezamoeinpe.persiancat.exceptions.InvalidControllerException;
+import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException;
 
 public interface PersianCat {
     /**
@@ -20,8 +20,8 @@ public interface PersianCat {
      * to teach Cat how to handel requests
      *
      * @param controllers arrays of objects annotated as controller
-     * @throws InvalidControllerException In runtime all controller will check and throw this if any
+     * @throws ControllerException In runtime all controller will check and throw this if any
      *                                    problem find
      */
-    void setControllers(Object... controllers) throws InvalidControllerException;
+    void setControllers(Object... controllers) throws ControllerException;
 }

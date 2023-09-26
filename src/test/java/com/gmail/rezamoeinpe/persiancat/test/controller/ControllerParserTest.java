@@ -1,9 +1,9 @@
 package com.gmail.rezamoeinpe.persiancat.test.controller;
 
-import com.gmail.rezamoeinpe.persiancat.exceptions.InvalidControllerException;
-import com.gmail.rezamoeinpe.persiancat.exceptions.MethodNotFound;
-import com.gmail.rezamoeinpe.persiancat.exceptions.NotRestController;
-import com.gmail.rezamoeinpe.persiancat.exceptions.NounUniqueURIMapping;
+import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException;
+import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.MethodNotFound;
+import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.NotRestController;
+import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.NounUniqueURIMapping;
 import com.gmail.rezamoeinpe.persiancat.internal.controller.ControllerParser;
 import com.gmail.rezamoeinpe.persiancat.internal.controller.ControllerParserImpl;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
@@ -41,7 +41,7 @@ class ControllerParserTest {
 
         var noRestController = new NoRestController();
         assertThatThrownBy(() -> controllerChecker.parsController(noRestController))
-                .isInstanceOf(InvalidControllerException.class)
+                .isInstanceOf(ControllerException.class)
                 .hasCauseInstanceOf(NotRestController.class)
                 .hasMessageContaining("Controller should annotated with @RestController");
     }
@@ -54,7 +54,7 @@ class ControllerParserTest {
 
         var noMethodRestController = new NoMethodRestController();
         assertThatThrownBy(() -> controllerChecker.parsController(noMethodRestController))
-                .isInstanceOf(InvalidControllerException.class)
+                .isInstanceOf(ControllerException.class)
                 .hasCauseInstanceOf(MethodNotFound.class)
                 .hasMessageContaining("Controller has not any public method annotated as rest method");
     }
@@ -72,7 +72,7 @@ class ControllerParserTest {
 
         var mockRestController = new MockRestController();
         assertThatThrownBy(() -> controllerChecker.parsController(mockRestController))
-                .isInstanceOf(InvalidControllerException.class)
+                .isInstanceOf(ControllerException.class)
                 .hasCauseInstanceOf(NounUniqueURIMapping.class)
                 .hasMessageContaining("URL mapping should be unique");
     }
@@ -99,7 +99,7 @@ class ControllerParserTest {
         }
         var mockRestController = new MockRestController();
         assertThatThrownBy(() -> controllerChecker.parsController(mockRestController))
-                .isInstanceOf(InvalidControllerException.class)
+                .isInstanceOf(ControllerException.class)
                 .hasCauseInstanceOf(NounUniqueURIMapping.class)
                 .hasMessageContaining("URL mapping should be unique");
     }

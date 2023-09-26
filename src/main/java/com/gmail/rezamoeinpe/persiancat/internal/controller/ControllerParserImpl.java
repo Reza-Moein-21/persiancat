@@ -1,9 +1,9 @@
 package com.gmail.rezamoeinpe.persiancat.internal.controller;
 
-import com.gmail.rezamoeinpe.persiancat.exceptions.InvalidControllerException;
-import com.gmail.rezamoeinpe.persiancat.exceptions.MethodNotFound;
-import com.gmail.rezamoeinpe.persiancat.exceptions.NotRestController;
-import com.gmail.rezamoeinpe.persiancat.exceptions.NounUniqueURIMapping;
+import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException;
+import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.MethodNotFound;
+import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.NotRestController;
+import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.NounUniqueURIMapping;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
 import com.gmail.rezamoeinpe.persiancat.rest.method.GetMethod;
 import com.gmail.rezamoeinpe.persiancat.rest.method.PostMethod;
@@ -23,14 +23,15 @@ public class ControllerParserImpl implements ControllerParser {
             PostMethod.class);
 
     @Override
-    public ControllerInfo parsController(Object controller) throws InvalidControllerException {
+    public ControllerInfo parsController(Object controller) throws ControllerException {
+        LOGGER.trace("{}", controller);
         Objects.requireNonNull(controller, "pars action required a non-null Controller");
 
         Class<?> controllerClass = controller.getClass();
         String pathPrefix = getPathPrefix(controllerClass);
 
         if (hasNotAnyRestMethod(controllerClass))
-            throw new InvalidControllerException(new MethodNotFound());
+            throw new ControllerException(new MethodNotFound());
 
         var methods = getAvailableMethods(controllerClass);
 
@@ -38,7 +39,7 @@ public class ControllerParserImpl implements ControllerParser {
         var controllerInfo = new ControllerInfo(pathPrefix, methods);
 
         if (!areAllPathsUnique(controllerInfo))
-            throw new InvalidControllerException(new NounUniqueURIMapping());
+            throw new ControllerException(new NounUniqueURIMapping());
 
 
         return controllerInfo;
@@ -62,7 +63,7 @@ public class ControllerParserImpl implements ControllerParser {
             getMethodInfo(method).ifPresent(availableMethods::add);
 
         if (availableMethods.isEmpty())
-            throw new InvalidControllerException(new MethodNotFound());
+            throw new ControllerException(new MethodNotFound());
 
         return availableMethods;
     }
@@ -81,7 +82,7 @@ public class ControllerParserImpl implements ControllerParser {
             }
 
             if (numberOfRestMethod > 1)
-                throw new InvalidControllerException(new NounUniqueURIMapping());
+                throw new ControllerException(new NounUniqueURIMapping());
         }
 
         return Optional.ofNullable(info);
@@ -95,7 +96,7 @@ public class ControllerParserImpl implements ControllerParser {
     private String getPathPrefix(Class<?> controllerClass) {
 
         if (!controllerClass.isAnnotationPresent(RestController.class))
-            throw new InvalidControllerException(new NotRestController());
+            throw new ControllerException(new NotRestController());
 
         return controllerClass.getAnnotation(RestController.class).value();
     }
