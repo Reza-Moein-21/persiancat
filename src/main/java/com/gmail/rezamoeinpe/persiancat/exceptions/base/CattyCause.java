@@ -12,4 +12,9 @@ public abstract class CattyCause extends Throwable {
         return reason;
     }
 
+    public static class GeneralCause extends CattyCause {
+        public GeneralCause(Throwable throwable) {
+            super(throwable.getMessage());
+        }
+    }
 }

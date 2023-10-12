@@ -1,7 +1,7 @@
 package com.gmail.rezamoeinpe.persiancat.test.http.request;
 
+import com.gmail.rezamoeinpe.persiancat.exceptions.HttpRequestParserException;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
-import com.gmail.rezamoeinpe.persiancat.internal.http.exception.InvalidHttpMethodException;
 import com.gmail.rezamoeinpe.persiancat.internal.http.parser.HttpRequestParser;
 import com.gmail.rezamoeinpe.persiancat.internal.http.parser.HttpRequestParserImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,9 +21,10 @@ class HttpRequestParserLine1Test {
     }
 
     @Test
-    void givingNullInputStream_pars_shouldThrowNullPointerException() {
-        assertThatThrownBy(() -> p.pars(null), "Should thrown NullPointerException")
-                .isInstanceOf(NullPointerException.class);
+    void givingNullInputStream_pars_shouldThrowRequestInputStreamRequiredException() {
+        assertThatThrownBy(() -> p.pars(null), "Should thrown RequestInputStreamRequired")
+                .isInstanceOf(HttpRequestParserException.class)
+                .hasCauseInstanceOf(HttpRequestParserException.RequestInputStreamRequired.class);
     }
 
     @Test
@@ -46,7 +47,8 @@ class HttpRequestParserLine1Test {
     void givingUnsupportedMethod_pars_shouldThrownException() {
         var invalidMethodRequest = toInputStream("SET /hello?name=reza HTTP/1.1");
         assertThatThrownBy(() -> p.pars(invalidMethodRequest))
-                .isInstanceOf(InvalidHttpMethodException.class);
+                .isInstanceOf(HttpRequestParserException.class)
+                .hasCauseInstanceOf(HttpRequestParserException.InvalidHttpMethod.class);
     }
 
 

@@ -1,10 +1,11 @@
 package com.gmail.rezamoeinpe.persiancat.internal.http.parser;
 
+import com.gmail.rezamoeinpe.persiancat.exceptions.HttpRequestParserException;
+import com.gmail.rezamoeinpe.persiancat.exceptions.base.CattyCause;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpHeader;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpProtocol;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpRequest;
-import com.gmail.rezamoeinpe.persiancat.internal.http.exception.InvalidHttpMethodException;
 import com.gmail.rezamoeinpe.persiancat.internal.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,36 +28,39 @@ public class HttpRequestParserImpl implements HttpRequestParser {
     private final List<String> body = new ArrayList<>();
 
     @Override
-    public HttpRequest pars(InputStream inputStream) {
-        Objects.requireNonNull(inputStream);
+    public HttpRequest pars(InputStream inputStream) throws HttpRequestParserException {
+        if (Objects.isNull(inputStream))
+            throw new HttpRequestParserException(new HttpRequestParserException.RequestInputStreamRequired());
+
         var reader = new BufferedReader(new InputStreamReader(inputStream));
 
         var line = "";
         var emptyLineDetected = false;
-        try {
 
-            int lineNo = 0;
-            while ((line = reader.readLine()) != null) {
-                lineNo++;
-
-                LOGGER.trace("Reading lineNo {}", lineNo);
-
-                if (lineNo == 1)
-                    processLineOne(line);
-                else if (isEmptyLine(line))
-                    emptyLineDetected = true;
-                else if (emptyLineDetected)
-                    processBody(line);
-                else
-                    processHeader(line);
+        int lineNo = 0;
+        while (true) {
+            try {
+                if ((line = reader.readLine()) == null) break;
+            } catch (IOException e) {
+                throw new HttpRequestParserException(new CattyCause.GeneralCause(e));
             }
+            lineNo++;
 
-            if (lineNo == 0)
-                throw new IllegalArgumentException();
+            LOGGER.trace("Reading lineNo {}", lineNo);
 
-        } catch (IOException e) {
-            throw new IllegalStateException(e.getMessage());
+            if (lineNo == 1)
+                processLineOne(line);
+            else if (isEmptyLine(line))
+                emptyLineDetected = true;
+            else if (emptyLineDetected)
+                processBody(line);
+            else
+                processHeader(line);
         }
+
+        if (lineNo == 0)
+            throw new IllegalArgumentException();
+
 
         return new HttpRequest(this.method, this.path, this.protocol, this.headers, this.body);
     }
@@ -81,7 +85,7 @@ public class HttpRequestParserImpl implements HttpRequestParser {
         try {
             this.method = HttpMethod.valueOf(l1);
         } catch (IllegalArgumentException e) {
-            throw new InvalidHttpMethodException();
+            throw new HttpRequestParserException(new HttpRequestParserException.InvalidHttpMethod());
         }
 
         this.path = lines[1];
