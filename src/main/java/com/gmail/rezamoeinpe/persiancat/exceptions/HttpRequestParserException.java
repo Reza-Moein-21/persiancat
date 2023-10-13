@@ -8,16 +8,45 @@ public final class HttpRequestParserException extends CattyException {
         super(cause);
     }
 
-    public static class RequestInputStreamRequired extends CattyCause {
-        public RequestInputStreamRequired() {
-            super("Input stream required to pars http request");
+    public static class NullRequest extends CattyCause {
+        public NullRequest() {
+            super("HTTP request should not be null");
+        }
+    }
+
+    public static class EmptyRequest extends CattyCause {
+        public EmptyRequest() {
+            super("HTTP request should not be empty string");
         }
     }
 
     public static class InvalidHttpMethod extends CattyCause {
         public InvalidHttpMethod() {
-            super("Http method not valid");
+            super("Http method not supported");
         }
     }
 
+    public static class EmptyRequestPath extends CattyCause {
+        public EmptyRequestPath() {
+            super("Http request uri required");
+        }
+    }
+
+    public static class InvalidRequestPath extends CattyCause {
+        public InvalidRequestPath() {
+            super("Http request uri is not valid");
+        }
+    }
+
+    public static class EmptyHTTPVersion extends CattyCause {
+        public EmptyHTTPVersion() {
+            super("Http request version required");
+        }
+    }
+
+    public static class InvalidHTTPVersion extends CattyCause {
+        public InvalidHTTPVersion() {
+            super("Http version is not valid");
+        }
+    }
 }

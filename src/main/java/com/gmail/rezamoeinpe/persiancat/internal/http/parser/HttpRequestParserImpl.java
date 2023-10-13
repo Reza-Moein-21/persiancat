@@ -14,6 +14,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 
@@ -21,7 +23,7 @@ public class HttpRequestParserImpl implements HttpRequestParser {
     public static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestParserImpl.class);
 
     private HttpMethod method;
-    private String path;
+    private URI uri;
     private HttpProtocol protocol;
 
     private final Set<HttpHeader> headers = new HashSet<>();
@@ -30,7 +32,7 @@ public class HttpRequestParserImpl implements HttpRequestParser {
     @Override
     public HttpRequest pars(InputStream inputStream) throws HttpRequestParserException {
         if (Objects.isNull(inputStream))
-            throw new HttpRequestParserException(new HttpRequestParserException.RequestInputStreamRequired());
+            throw new HttpRequestParserException(new HttpRequestParserException.NullRequest());
 
         var reader = new BufferedReader(new InputStreamReader(inputStream));
 
@@ -59,10 +61,10 @@ public class HttpRequestParserImpl implements HttpRequestParser {
         }
 
         if (lineNo == 0)
-            throw new IllegalArgumentException();
+            throw new HttpRequestParserException(new HttpRequestParserException.EmptyRequest());
 
 
-        return new HttpRequest(this.method, this.path, this.protocol, this.headers, this.body);
+        return new HttpRequest(this.method, this.uri, this.protocol, this.headers, this.body);
     }
 
     private void processHeader(String line) {
@@ -81,6 +83,9 @@ public class HttpRequestParserImpl implements HttpRequestParser {
 
     private void processLineOne(String line1) {
         var lines = line1.split(" ");
+        if (lines.length == 0)
+            throw new HttpRequestParserException(new HttpRequestParserException.EmptyRequest());
+
         var l1 = lines[0];
         try {
             this.method = HttpMethod.valueOf(l1);
@@ -88,7 +93,20 @@ public class HttpRequestParserImpl implements HttpRequestParser {
             throw new HttpRequestParserException(new HttpRequestParserException.InvalidHttpMethod());
         }
 
-        this.path = lines[1];
-        this.protocol = HttpProtocol.findByTitle(lines[2]).orElseThrow();
+        if (lines.length == 1)
+            throw new HttpRequestParserException(new HttpRequestParserException.EmptyRequestPath());
+
+        try {
+            this.uri = new URI(lines[1]);
+        } catch (URISyntaxException e) {
+            throw new HttpRequestParserException(new HttpRequestParserException.InvalidRequestPath());
+        }
+
+        if (lines.length == 2)
+            throw new HttpRequestParserException(new HttpRequestParserException.EmptyHTTPVersion());
+
+
+        this.protocol = HttpProtocol.findByTitle(lines[2])
+                .orElseThrow(() -> new HttpRequestParserException(new HttpRequestParserException.InvalidHTTPVersion()));
     }
 }
