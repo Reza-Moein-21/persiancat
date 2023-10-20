@@ -68,8 +68,15 @@ public class HttpRequestParserImpl implements HttpRequestParser {
     }
 
     private void processHeader(String line) {
-        var headerNameValue = line.split(":");
-        final var header = new HttpHeader(StringUtils.trim(headerNameValue[0]), StringUtils.trim(headerNameValue[1]));
+        var firstColonIndex = line.indexOf(":");
+
+        if(firstColonIndex == -1)
+            throw new HttpRequestParserException(new HttpRequestParserException.InvalidHeaderFormat());
+
+        var key = line.substring(0, firstColonIndex);
+        var value = line.substring(firstColonIndex + 1);
+
+        final var header = new HttpHeader(StringUtils.trim(key), StringUtils.trim(value));
         this.headers.add(header);
     }
 

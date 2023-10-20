@@ -49,4 +49,10 @@ public final class HttpRequestParserException extends CattyException {
             super("Http version is not valid");
         }
     }
+
+    public static class InvalidHeaderFormat extends CattyCause {
+        public InvalidHeaderFormat() {
+            super("Http header format is not valid");
+        }
+    }
 }

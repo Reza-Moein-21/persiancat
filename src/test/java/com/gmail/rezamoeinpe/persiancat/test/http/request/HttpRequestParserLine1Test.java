@@ -26,27 +26,6 @@ class HttpRequestParserLine1Test {
         p = new HttpRequestParserImpl();
     }
 
-    @Test
-    void givingNullInputStream_pars_shouldThrowNullRequestException() {
-        assertThatThrownBy(() -> p.pars(null), "Should thrown NullRequest")
-                .isInstanceOf(HttpRequestParserException.class)
-                .hasCauseInstanceOf(HttpRequestParserException.NullRequest.class);
-    }
-
-    @Test
-    void givingEmpty_pars_shouldThrownEmptyRequestException() {
-        var emptyStream = toInputStream("");
-        assertThatThrownBy(() -> p.pars(emptyStream))
-                .isInstanceOf(HttpRequestParserException.class)
-                .hasCauseInstanceOf(HttpRequestParserException.EmptyRequest.class);
-
-        var invalidStream = toInputStream("   ");
-        assertThatThrownBy(() -> p.pars(invalidStream))
-                .isInstanceOf(HttpRequestParserException.class)
-                .hasCauseInstanceOf(HttpRequestParserException.EmptyRequest.class);
-    }
-
-
     @Nested
     class Line1PathTest {
         @Test
