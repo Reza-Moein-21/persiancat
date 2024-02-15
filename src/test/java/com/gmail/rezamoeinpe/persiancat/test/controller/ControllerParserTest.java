@@ -5,7 +5,6 @@ import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.MethodNot
 import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.NotRestController;
 import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.NounUniqueURIMapping;
 import com.gmail.rezamoeinpe.persiancat.internal.controller.ControllerParser;
-import com.gmail.rezamoeinpe.persiancat.internal.controller.ControllerParserImpl;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
 import com.gmail.rezamoeinpe.persiancat.rest.method.GetMethod;
 import com.gmail.rezamoeinpe.persiancat.rest.method.PostMethod;
@@ -24,7 +23,7 @@ class ControllerParserTest {
 
     @BeforeEach
     void setUp() {
-        controllerChecker = new ControllerParserImpl();
+        controllerChecker = new ControllerParser();
     }
 
     @Test

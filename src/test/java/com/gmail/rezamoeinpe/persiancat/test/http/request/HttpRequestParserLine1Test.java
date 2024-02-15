@@ -4,7 +4,6 @@ import com.gmail.rezamoeinpe.persiancat.exceptions.HttpRequestParserException;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpProtocol;
 import com.gmail.rezamoeinpe.persiancat.internal.http.parser.HttpRequestParser;
-import com.gmail.rezamoeinpe.persiancat.internal.http.parser.HttpRequestParserImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -23,7 +22,7 @@ class HttpRequestParserLine1Test {
 
     @BeforeEach
     void setUp() {
-        p = new HttpRequestParserImpl();
+        p = new HttpRequestParser();
     }
 
     @Nested
