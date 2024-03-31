@@ -3,155 +3,123 @@ package com.gmail.rezamoeinpe.persiancat.test.http.request;
 import com.gmail.rezamoeinpe.persiancat.exceptions.HttpRequestParserException;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpProtocol;
+import com.gmail.rezamoeinpe.persiancat.internal.http.HttpStatus;
 import com.gmail.rezamoeinpe.persiancat.internal.http.parser.HttpRequestParser;
+import com.gmail.rezamoeinpe.persiancat.test.util.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.channels.ReadableByteChannel;
 
-import static com.gmail.rezamoeinpe.persiancat.test.util.TestUtils.toInputStream;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.catchThrowableOfType;
 
-class HttpRequestParserLine1Test {
+public class HttpRequestParserLine1Test {
 
-    HttpRequestParser p;
+    public static final ReadableByteChannel VALID_HTTP_REQUEST = TestUtils.toByteChannel("GET / HTTP/1.1\r\n" +
+            "Host: 127.0.0.1:8080\r\n" +
+            "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0\r\n" +
+            "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\n" +
+            "Accept-Language: en-US,en;q=0.5\r\n" +
+            "Accept-Encoding: gzip, deflate, br\r\n" +
+            "Connection: keep-alive\r\n" +
+            "Upgrade-Insecure-Requests: 1\r\n" +
+            "Sec-Fetch-Dest: document\r\n" +
+            "Sec-Fetch-Mode: navigate\r\n" +
+            "Sec-Fetch-Site: none\r\n" +
+            "Sec-Fetch-User: ?1\r\n" +
+            "\r\n");
+
+    public static final ReadableByteChannel BAD_METHOD = TestUtils.toByteChannel(
+            "GEt / HTTP/1.1\r\n" +
+                    "\r\n");
+    public static final ReadableByteChannel BAD_METHOD_TO_LONG = TestUtils.toByteChannel(
+            "GETTTTTTTTTTTTT / HTTP/1.1\r\n" +
+                    "\r\n");
+
+    public static final ReadableByteChannel EXTRA_ITEM_REQUEST_LINE = TestUtils.toByteChannel(
+            "GET /  AAA HTTP/1.1\r\n" +
+                    "\r\n");
+
+    public static final ReadableByteChannel EMPTY_REQUEST_LINE = TestUtils.toByteChannel(
+            "\r\n" +
+                    "Host: 127.0.0.1:8080\r\n" +
+                    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0\r\n" +
+                    "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\n" +
+                    "Accept-Language: en-US,en;q=0.5\r\n" +
+                    "Accept-Encoding: gzip, deflate, br\r\n" +
+                    "\r\n");
+
+    public static final ReadableByteChannel REQUEST_LINE_ONLY_CR = TestUtils.toByteChannel(
+            "GET / HTTP/1.1\r" +  // No line feed
+                    "Host: 127.0.0.1:8080\r\n" +
+                    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0\r\n" +
+                    "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\n" +
+                    "Accept-Language: en-US,en;q=0.5\r\n" +
+                    "Accept-Encoding: gzip, deflate, br\r\n" +
+                    "\r\n");
+
+    public static final ReadableByteChannel REQUEST_LINE_NO_CR_LF = TestUtils.toByteChannel(
+            "GET / HTTP/1.1" +  // No CR LF
+                    "Host: 127.0.0.1:8080\r\n" +
+                    "User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:124.0) Gecko/20100101 Firefox/124.0\r\n" +
+                    "Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8\r\n" +
+                    "Accept-Language: en-US,en;q=0.5\r\n" +
+                    "Accept-Encoding: gzip, deflate, br\r\n" +
+                    "\r\n");
+
+    HttpRequestParser parser;
 
     @BeforeEach
     void setUp() {
-        p = new HttpRequestParser();
+        parser = new HttpRequestParser();
     }
 
-    @Nested
-    class Line1PathTest {
-        @Test
-        void givingEmptyURI_pars_shouldThrownException() {
-            var noURI = toInputStream("POST");
-            assertThatThrownBy(() -> p.pars(noURI))
-                    .isInstanceOf(HttpRequestParserException.class)
-                    .hasCauseInstanceOf(HttpRequestParserException.EmptyRequestPath.class);
-
-            var emptyURI = toInputStream("POST      ");
-            assertThatThrownBy(() -> p.pars(emptyURI))
-                    .isInstanceOf(HttpRequestParserException.class)
-                    .hasCauseInstanceOf(HttpRequestParserException.EmptyRequestPath.class);
-        }
-
-        @Test
-        void givingInvalidURI_pars_shouldThrownException() {
-            var invalidURI = toInputStream("POST http: HTTP/1.1");
-            assertThatThrownBy(() -> p.pars(invalidURI))
-                    .isInstanceOf(HttpRequestParserException.class)
-                    .hasCauseInstanceOf(HttpRequestParserException.InvalidRequestPath.class);
-
-            var anotherInvalidURI = toInputStream("POST \\ HTTP/1.1");
-            assertThatThrownBy(() -> p.pars(anotherInvalidURI))
-                    .isInstanceOf(HttpRequestParserException.class)
-                    .hasCauseInstanceOf(HttpRequestParserException.InvalidRequestPath.class);
-        }
-
-        @Test
-        void givingValidURI_pars_shouldGetExpectedURI() throws URISyntaxException {
-            var validLine1 = toInputStream("POST /hello?name:reza HTTP/1.1");
-            var result = p.pars(validLine1);
-            assertThat(result.uri()).isEqualTo(new URI("/hello?name:reza"));
-        }
+    @Test
+    void validRequest_pars_methodShouldBeGet() {
+        var req = parser.pars(VALID_HTTP_REQUEST);
+        assertThat(req.method()).isEqualTo(HttpMethod.GET);
+        assertThat(req.uri().getPath()).isEqualTo("/");
+        assertThat(req.protocol()).isEqualTo(HttpProtocol.HTTP_1_1);
     }
 
-    @Nested
-    class Line1HTTPVersionTest {
-        @Test
-        void givingEmptyHttpVersion_pars_shouldThrownException() {
-            var emptyVersion = toInputStream("POST / ");
-            assertThatThrownBy(() -> p.pars(emptyVersion))
-                    .isInstanceOf(HttpRequestParserException.class)
-                    .hasCauseInstanceOf(HttpRequestParserException.EmptyHTTPVersion.class);
-        }
-
-        @Test
-        void givingInvalidHttpVersion_pars_shouldThrownException() {
-            var invalidVersion = toInputStream("POST / HTTP");
-            assertThatThrownBy(() -> p.pars(invalidVersion))
-                    .isInstanceOf(HttpRequestParserException.class)
-                    .hasCauseInstanceOf(HttpRequestParserException.InvalidHTTPVersion.class);
-        }
-
-        @Test
-        void givingValidHttpProtocol_pars_shouldGetExpectedHttpProtocolName() {
-            var validLine1 = toInputStream("POST /test/mock HTTP/1.1");
-            var result = p.pars(validLine1);
-            assertThat(result.protocol()).isEqualTo(HttpProtocol.HTTP_1_1);
-        }
-    }
-
-    @Nested
-    class Line1MethodTest {
-        @Test
-        void givingValidLine1ForGETMethod_pars_shouldGetExpectedHttpRequestGETMethod() {
-            var sampleRequest = "GET /welcome HTTP/1.1";
-            var result = p.pars(toInputStream(sampleRequest));
-            assertThat(result)
-                    .isNotNull()
-                    .matches(r -> r.method().equals(HttpMethod.GET));
-        }
-
-        @Test
-        void givingValidLine1ForPOSTMethod_pars_shouldGetExpectedHttpRequestPOSTMethod() {
-            var sampleRequest = "POST / HTTP/1.1";
-            var result = p.pars(toInputStream(sampleRequest));
-            assertThat(result)
-                    .isNotNull()
-                    .matches(r -> r.method().equals(HttpMethod.POST));
-        }
-
-        @Test
-        void givingValidLine1ForPUTMethod_pars_shouldGetExpectedHttpRequestPUTMethod() {
-            var sampleRequest = "PUT / HTTP/1.1";
-            var result = p.pars(toInputStream(sampleRequest));
-            assertThat(result)
-                    .isNotNull()
-                    .matches(r -> r.method().equals(HttpMethod.PUT));
-        }
-
-        @Test
-        void givingValidLine1ForDELETEMethod_pars_shouldGetExpectedHttpRequestDELETEMethod() {
-            var sampleRequest = "DELETE /api/v1/del/123 HTTP/1.1";
-            var result = p.pars(toInputStream(sampleRequest));
-            assertThat(result)
-                    .isNotNull()
-                    .matches(r -> r.method().equals(HttpMethod.DELETE));
-        }
-
-        @Test
-        void givingValidLine1ForPATCHMethod_pars_shouldGetExpectedHttpRequestPATCHMethod() {
-            var sampleRequest = "PATCH /api/v1/del/123 HTTP/1.1";
-            var result = p.pars(toInputStream(sampleRequest));
-            assertThat(result)
-                    .isNotNull()
-                    .matches(r -> r.method().equals(HttpMethod.PATCH));
-        }
-
-        @Test
-        void givingInvalidLine1HttpMethod_pars_shouldThrownInvalidHttpMethodException() {
-            var sampleRequest = "HEAD / HTTP/1.1";
-            InputStream inputStream = toInputStream(sampleRequest);
-            assertThatThrownBy(() -> p.pars(inputStream), "Should throw InvalidHttpMethod")
-                    .isInstanceOf(HttpRequestParserException.class)
-                    .hasCauseInstanceOf(HttpRequestParserException.InvalidHttpMethod.class);
-        }
-
-        @Test
-        void givingUnsupportedMethod_pars_shouldThrownException() {
-            var invalidMethodRequest = toInputStream("SET /hello?name=reza HTTP/1.1");
-            assertThatThrownBy(() -> p.pars(invalidMethodRequest))
-                    .isInstanceOf(HttpRequestParserException.class)
-                    .hasCauseInstanceOf(HttpRequestParserException.InvalidHttpMethod.class);
-        }
+    @Test
+    void badHttpMethodRequest_pars_ShouldThrowNotImplemented() {
+        var except = catchThrowableOfType(() -> parser.pars(BAD_METHOD), HttpRequestParserException.class);
+        assertThat(except.getCode()).isEqualTo(String.valueOf(HttpStatus.NOT_IMPLEMENTED.getCode()));
+        assertThat(except.getAddition()).containsAnyOf("Method GEt not implemented");
 
     }
 
+    @Test
+    void badHttpMethodRequest_pars_ShouldThrowNotImplemented2() {
+        var except = catchThrowableOfType(() -> parser.pars(BAD_METHOD_TO_LONG), HttpRequestParserException.class);
+        assertThat(except.getCode()).isEqualTo(String.valueOf(HttpStatus.NOT_IMPLEMENTED.getCode()));
+        assertThat(except.getAddition()).containsAnyOf("Method length is too long");
+    }
 
+    @Test
+    void extraItemInRequestLine_pars_ShouldThrowBadRequest() {
+        var req = catchThrowableOfType(() -> parser.pars(EXTRA_ITEM_REQUEST_LINE), HttpRequestParserException.class);
+        assertThat(req.getCode()).isEqualTo(String.valueOf(HttpStatus.BAD_REQUEST.getCode()));
+    }
+
+    @Test
+    void emptyRequestLine_pars_ShouldThrowBadRequest() {
+        var req = catchThrowableOfType(() -> parser.pars(EMPTY_REQUEST_LINE), HttpRequestParserException.class);
+        assertThat(req.getCode()).isEqualTo(String.valueOf(HttpStatus.BAD_REQUEST.getCode()));
+    }
+
+    @Test
+    void requestLineOnlyCRNotLineFeed_pars_ShouldThrowBadRequest() {
+        var req = catchThrowableOfType(() -> parser.pars(REQUEST_LINE_ONLY_CR), HttpRequestParserException.class);
+        assertThat(req.getCode()).isEqualTo(String.valueOf(HttpStatus.BAD_REQUEST.getCode()));
+    }
+
+    @Test
+    void requestLineNoCrLF_pars_ShouldThrowBadRequest() {
+        var req = catchThrowableOfType(() -> parser.pars(REQUEST_LINE_NO_CR_LF), HttpRequestParserException.class);
+        assertThat(req.getCode()).isEqualTo(String.valueOf(HttpStatus.HTTP_VERSION_NOT_SUPPORTED.getCode()));
+        assertThat(req.getAddition()).isEqualTo("Http version is not valid");
+    }
 }

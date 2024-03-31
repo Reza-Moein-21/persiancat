@@ -1,58 +1,25 @@
 package com.gmail.rezamoeinpe.persiancat.exceptions;
 
-import com.gmail.rezamoeinpe.persiancat.exceptions.base.CattyCause;
 import com.gmail.rezamoeinpe.persiancat.exceptions.base.CattyException;
+import com.gmail.rezamoeinpe.persiancat.exceptions.base.CattyExceptionInfo;
+import com.gmail.rezamoeinpe.persiancat.internal.http.HttpStatus;
 
 public final class HttpRequestParserException extends CattyException {
-    public HttpRequestParserException(CattyCause cause) {
-        super(cause);
+    public static final HttpRequestParserException NULL_REQUEST = HttpRequestParserException.ofHttpStatus(HttpStatus.BAD_REQUEST, "HTTP request should not be null");
+    public static final HttpRequestParserException EMPTY_REQUEST = HttpRequestParserException.ofHttpStatus(HttpStatus.BAD_REQUEST, "HTTP request is empty");
+    public static final HttpRequestParserException INVALID_REQUEST_PATH = HttpRequestParserException.ofHttpStatus(HttpStatus.BAD_REQUEST, "Http request uri is not valid");
+    public static final HttpRequestParserException INVALID_HTTP_VERSION = HttpRequestParserException.ofHttpStatus(HttpStatus.HTTP_VERSION_NOT_SUPPORTED, "Http version is not valid");
+
+    private HttpRequestParserException(CattyExceptionInfo error) {
+        super(error);
     }
 
-    public static class NullRequest extends CattyCause {
-        public NullRequest() {
-            super("HTTP request should not be null");
-        }
+    public static HttpRequestParserException ofHttpStatus(HttpStatus status) {
+        return new HttpRequestParserException(new CattyExceptionInfo(String.valueOf(status.getCode()), status.getDescription()));
     }
 
-    public static class EmptyRequest extends CattyCause {
-        public EmptyRequest() {
-            super("HTTP request should not be empty string");
-        }
+    public static HttpRequestParserException ofHttpStatus(HttpStatus status, String addition) {
+        return new HttpRequestParserException(new CattyExceptionInfo(String.valueOf(status.getCode()), status.getDescription(), addition));
     }
 
-    public static class InvalidHttpMethod extends CattyCause {
-        public InvalidHttpMethod() {
-            super("Http method not supported");
-        }
-    }
-
-    public static class EmptyRequestPath extends CattyCause {
-        public EmptyRequestPath() {
-            super("Http request uri required");
-        }
-    }
-
-    public static class InvalidRequestPath extends CattyCause {
-        public InvalidRequestPath() {
-            super("Http request uri is not valid");
-        }
-    }
-
-    public static class EmptyHTTPVersion extends CattyCause {
-        public EmptyHTTPVersion() {
-            super("Http request version required");
-        }
-    }
-
-    public static class InvalidHTTPVersion extends CattyCause {
-        public InvalidHTTPVersion() {
-            super("Http version is not valid");
-        }
-    }
-
-    public static class InvalidHeaderFormat extends CattyCause {
-        public InvalidHeaderFormat() {
-            super("Http header format is not valid");
-        }
-    }
 }

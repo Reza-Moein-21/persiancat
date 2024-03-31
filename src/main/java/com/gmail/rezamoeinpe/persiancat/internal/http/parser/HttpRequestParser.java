@@ -1,118 +1,131 @@
 package com.gmail.rezamoeinpe.persiancat.internal.http.parser;
 
 import com.gmail.rezamoeinpe.persiancat.exceptions.HttpRequestParserException;
-import com.gmail.rezamoeinpe.persiancat.exceptions.base.CattyCause;
-import com.gmail.rezamoeinpe.persiancat.internal.http.HttpHeader;
-import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
-import com.gmail.rezamoeinpe.persiancat.internal.http.HttpProtocol;
-import com.gmail.rezamoeinpe.persiancat.internal.http.HttpRequest;
-import com.gmail.rezamoeinpe.persiancat.internal.utils.StringUtils;
+import com.gmail.rezamoeinpe.persiancat.internal.http.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.*;
 
 
 public class HttpRequestParser {
     public static final Logger LOGGER = LoggerFactory.getLogger(HttpRequestParser.class);
+    private static final byte SP = 0x20;
+    private static final byte CR = 0x0D;
+    private static final byte LF = 0x0A;
+
+    private static final int BUFFER_SIZE = 1024;
+    private static final int MAX_URI_SIZE = 30; // TODO should find the right number
 
     private HttpMethod method;
     private URI uri;
     private HttpProtocol protocol;
 
+
+    private final ByteBuffer buffer = ByteBuffer.allocateDirect(BUFFER_SIZE);
+    private ReadableByteChannel byteChannel;
+
     private final Set<HttpHeader> headers = new HashSet<>();
     private final List<String> body = new ArrayList<>();
 
-    public HttpRequest pars(InputStream inputStream) throws HttpRequestParserException {
-        if (Objects.isNull(inputStream))
-            throw new HttpRequestParserException(new HttpRequestParserException.NullRequest());
 
-        var reader = new BufferedReader(new InputStreamReader(inputStream));
+    public HttpRequest pars(ReadableByteChannel byteChannel) throws HttpRequestParserException {
+        final StringBuilder processBuffer = new StringBuilder();
 
-        var line = "";
-        var emptyLineDetected = false;
+        if (Objects.isNull(byteChannel)) throw HttpRequestParserException.NULL_REQUEST;
 
-        int lineNo = 0;
-        while (true) {
-            try {
-                if ((line = reader.readLine()) == null) break;
-            } catch (IOException e) {
-                throw new HttpRequestParserException(new CattyCause.GeneralCause(e));
-            }
-            lineNo++;
+        this.byteChannel = byteChannel;
 
-            LOGGER.trace("Reading lineNo {}", lineNo);
+        byte aByte;
 
-            if (lineNo == 1)
-                processLineOne(line);
-            else if (isEmptyLine(line))
-                emptyLineDetected = true;
-            else if (emptyLineDetected)
-                processBody(line);
-            else
-                processHeader(line);
+        while ((aByte = readAByte()) > 0) {
+            processLineOne(aByte, processBuffer);
+
+            // TODO temporary, should continue to process headers and body then break the loop
+            if (this.protocol != null) break;
+
         }
 
-        if (lineNo == 0)
-            throw new HttpRequestParserException(new HttpRequestParserException.EmptyRequest());
-
+        if (aByte == 0) throw HttpRequestParserException.EMPTY_REQUEST;
 
         return new HttpRequest(this.method, this.uri, this.protocol, this.headers, this.body);
     }
 
-    private void processHeader(String line) {
-        var firstColonIndex = line.indexOf(":");
+    private byte readAByte() {
 
-        if (firstColonIndex == -1)
-            throw new HttpRequestParserException(new HttpRequestParserException.InvalidHeaderFormat());
+        if (!buffer.hasRemaining()) return 0;
 
-        var key = line.substring(0, firstColonIndex);
-        var value = line.substring(firstColonIndex + 1);
+        byte aByte = buffer.get();
 
-        final var header = new HttpHeader(StringUtils.trim(key), StringUtils.trim(value));
-        this.headers.add(header);
+        if (aByte == 0) {
+            buffer.rewind();
+            try {
+                this.byteChannel.read(buffer);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            buffer.flip();
+            try {
+                aByte = buffer.get();
+            } catch (Exception e) {
+                return 0;
+            }
+        }
+        return aByte;
     }
 
-    private void processBody(String line) {
-        this.body.add(line);
-    }
+    private void processLineOne(byte aByte, StringBuilder processBuffer) {
 
-    private boolean isEmptyLine(String line) {
-        return line.isEmpty() || line.equals("\r\n");
-    }
-
-    private void processLineOne(String line1) {
-        var lines = line1.split(" ");
-        if (lines.length == 0)
-            throw new HttpRequestParserException(new HttpRequestParserException.EmptyRequest());
-
-        var l1 = lines[0];
-        try {
-            this.method = HttpMethod.valueOf(l1);
-        } catch (IllegalArgumentException e) {
-            throw new HttpRequestParserException(new HttpRequestParserException.InvalidHttpMethod());
+        if (aByte == CR) {
+            var nextByte = readAByte();
+            if (nextByte == LF) {
+                LOGGER.debug("Request-line Version: {}", processBuffer);
+                if (this.method == null || this.uri == null)
+                    throw HttpRequestParserException.ofHttpStatus(HttpStatus.BAD_REQUEST);
+                this.protocol = HttpProtocol.findByTitle(processBuffer.toString()).orElseThrow(() -> HttpRequestParserException.INVALID_HTTP_VERSION);
+                return;
+            } else {
+                throw HttpRequestParserException.ofHttpStatus(HttpStatus.BAD_REQUEST);
+            }
         }
 
-        if (lines.length == 1)
-            throw new HttpRequestParserException(new HttpRequestParserException.EmptyRequestPath());
 
-        try {
-            this.uri = new URI(lines[1]);
-        } catch (URISyntaxException e) {
-            throw new HttpRequestParserException(new HttpRequestParserException.InvalidRequestPath());
+        if (aByte == SP) {
+            if (this.method == null) {
+                LOGGER.debug("Request-line method: {}", processBuffer);
+                try {
+                    this.method = HttpMethod.valueOf(processBuffer.toString());
+                } catch (IllegalArgumentException e) {
+                    throw HttpRequestParserException.ofHttpStatus(HttpStatus.NOT_IMPLEMENTED, String.format("Method %s not implemented", processBuffer));
+                }
+            } else if (this.uri == null) {
+                LOGGER.debug("Request-line uri: {}", processBuffer);
+                try {
+                    this.uri = new URI(processBuffer.toString());
+                } catch (URISyntaxException e) {
+                    throw HttpRequestParserException.INVALID_REQUEST_PATH;
+                }
+            } else {
+                throw HttpRequestParserException.ofHttpStatus(HttpStatus.BAD_REQUEST);
+            }
+
+            processBuffer.delete(0, processBuffer.length());
+        } else {
+            processBuffer.append((char) aByte);
+
+            if (this.method == null && processBuffer.length() > HttpMethod.MAX_SIZE)
+                throw HttpRequestParserException.ofHttpStatus(HttpStatus.NOT_IMPLEMENTED, "Method length is too long");
+
+            if (this.method != null && this.uri == null && processBuffer.length() > MAX_URI_SIZE)
+                throw HttpRequestParserException.ofHttpStatus(HttpStatus.REQUEST_URI_TOO_LARGE);
+
+            if (this.method != null && this.uri != null && this.protocol == null && processBuffer.length() > HttpProtocol.MAX_SIZE)
+                throw HttpRequestParserException.INVALID_HTTP_VERSION;
         }
-
-        if (lines.length == 2)
-            throw new HttpRequestParserException(new HttpRequestParserException.EmptyHTTPVersion());
-
-
-        this.protocol = HttpProtocol.findByTitle(lines[2])
-                .orElseThrow(() -> new HttpRequestParserException(new HttpRequestParserException.InvalidHTTPVersion()));
     }
 }

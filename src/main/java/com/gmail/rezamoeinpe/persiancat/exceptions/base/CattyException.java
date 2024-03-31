@@ -1,22 +1,37 @@
 package com.gmail.rezamoeinpe.persiancat.exceptions.base;
 
-import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException;
-import com.gmail.rezamoeinpe.persiancat.exceptions.HttpRequestParserException;
+public abstract class CattyException extends RuntimeException implements CattyError {
+    private final CattyExceptionInfo info;
 
-public abstract sealed class CattyException extends RuntimeException permits ControllerException, HttpRequestParserException {
-    private final CattyCause cause;
-
-    protected CattyException(CattyCause cause) {
-        super(cause);
-        this.cause = cause;
+    protected CattyException(CattyExceptionInfo info) {
+        this.info = info;
     }
 
-    public CattyCause cause() {
-        return cause;
+    @Override
+    public String getCode() {
+        return info.code();
+    }
+
+    @Override
+    public String getReason() {
+        return info.reason();
+    }
+
+    @Override
+    public String getAddition() {
+        return info.addition();
+    }
+
+    @Override
+    public String getMessage() {
+        if (this.getAddition() == null)
+            return String.format("[%s:%s]", this.getCode(), this.getReason());
+
+        return String.format("[%s:%s, %s]", this.getCode(), this.getReason(), this.getAddition());
     }
 
     @Override
     public String toString() {
-        return String.format("%s [%s]", getClass().getSimpleName(), cause.reason());
+        return this.getClass().getSimpleName() + " " + this.getMessage();
     }
 }

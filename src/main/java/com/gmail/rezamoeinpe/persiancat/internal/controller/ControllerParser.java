@@ -1,9 +1,6 @@
 package com.gmail.rezamoeinpe.persiancat.internal.controller;
 
 import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException;
-import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.MethodNotFound;
-import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.NotRestController;
-import com.gmail.rezamoeinpe.persiancat.exceptions.ControllerException.NounUniqueURIMapping;
 import com.gmail.rezamoeinpe.persiancat.internal.http.HttpMethod;
 import com.gmail.rezamoeinpe.persiancat.rest.method.GetMethod;
 import com.gmail.rezamoeinpe.persiancat.rest.method.PostMethod;
@@ -30,7 +27,7 @@ public class ControllerParser {
         String pathPrefix = getPathPrefix(controllerClass);
 
         if (hasNotAnyRestMethod(controllerClass))
-            throw new ControllerException(new MethodNotFound());
+            throw ControllerException.METHOD_NOT_FOUND;
 
         var methods = getAvailableMethods(controllerClass);
 
@@ -38,7 +35,7 @@ public class ControllerParser {
         var controllerInfo = new ControllerInfo(pathPrefix, methods, controller);
 
         if (!areAllPathsUnique(controllerInfo))
-            throw new ControllerException(new NounUniqueURIMapping());
+            throw ControllerException.NOUN_UNIQUE_URI_MAPPING;
 
 
         return controllerInfo;
@@ -62,7 +59,7 @@ public class ControllerParser {
             getMethodInfo(method).ifPresent(availableMethods::add);
 
         if (availableMethods.isEmpty())
-            throw new ControllerException(new MethodNotFound());
+            throw ControllerException.METHOD_NOT_FOUND;
 
         return availableMethods;
     }
@@ -81,7 +78,7 @@ public class ControllerParser {
             }
 
             if (numberOfRestMethod > 1)
-                throw new ControllerException(new NounUniqueURIMapping());
+                throw ControllerException.NOUN_UNIQUE_URI_MAPPING;
         }
 
         return Optional.ofNullable(info);
@@ -95,7 +92,7 @@ public class ControllerParser {
     private String getPathPrefix(Class<?> controllerClass) {
 
         if (!controllerClass.isAnnotationPresent(RestController.class))
-            throw new ControllerException(new NotRestController());
+            throw ControllerException.NOT_A_REST_CONTROLLER;
 
         return controllerClass.getAnnotation(RestController.class).value();
     }

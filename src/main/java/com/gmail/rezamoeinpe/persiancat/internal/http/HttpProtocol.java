@@ -6,6 +6,11 @@ import java.util.Optional;
 public enum HttpProtocol {
     HTTP_1_1("HTTP/1.1", "1.1");
 
+    public static final int MAX_SIZE = Arrays.stream(values())
+            .map(HttpProtocol::getTitle)
+            .mapToInt(String::length)
+            .max()
+            .orElse(0);
     private final String title;
     private final String version;
 
@@ -13,6 +18,7 @@ public enum HttpProtocol {
         this.title = title;
         this.version = version;
     }
+
 
     public static Optional<HttpProtocol> findByTitle(String title) {
         return Arrays.stream(values()).filter(e -> e.getTitle().equals(title)).findFirst();
