@@ -32,6 +32,7 @@ public class HttpRequestParser {
 
     private final Set<HttpHeader> headers = new HashSet<>();
     private final List<String> body = new ArrayList<>();
+    private boolean headerBufferCleared = false;
 
 
     public HttpRequest pars(ReadableByteChannel byteChannel) throws HttpRequestParserException {
@@ -44,16 +45,50 @@ public class HttpRequestParser {
         byte aByte;
 
         while ((aByte = readAByte()) > 0) {
-            processLineOne(aByte, processBuffer);
+            LOGGER.debug("{}={}", aByte, (char) aByte);
+            if (!isLineOneProcessed()) {
+                processLineOne(aByte, processBuffer);
+                continue;
+            }
 
-            // TODO temporary, should continue to process headers and body then break the loop
-            if (this.protocol != null) break;
-
+            processHeaders(aByte, processBuffer);
         }
 
-        if (aByte == 0) throw HttpRequestParserException.EMPTY_REQUEST;
+        if (aByte == 0 && this.method == null) throw HttpRequestParserException.EMPTY_REQUEST;
 
         return new HttpRequest(this.method, this.uri, this.protocol, this.headers, this.body);
+    }
+
+    private boolean isLineOneProcessed() {
+        return this.protocol != null;
+    }
+
+    private void processHeaders(byte aByte, StringBuilder processBuffer) {
+        if (!headerBufferCleared) {
+            clearProcessBuffer(processBuffer);
+            headerBufferCleared = true;
+        }
+        if (aByte == CR) {
+            var nextByte = readAByte();
+            if (nextByte == LF) {
+                LOGGER.debug("Header: {}", processBuffer);
+                var headerText = processBuffer.toString();
+                if (headerText.isEmpty()) return;
+
+                var headerKeyValue = headerText.split(":");
+
+                if (headerKeyValue.length < 2)
+                    throw HttpRequestParserException.INVALID_HEADER_FORMAT;
+
+                headers.add(new HttpHeader(headerKeyValue[0], headerKeyValue[1]));
+                clearProcessBuffer(processBuffer);
+                return;
+            } else {
+                throw HttpRequestParserException.ofHttpStatus(HttpStatus.BAD_REQUEST);
+            }
+        }
+        processBuffer.append((char) aByte);
+
     }
 
     private byte readAByte() {
@@ -114,7 +149,7 @@ public class HttpRequestParser {
                 throw HttpRequestParserException.ofHttpStatus(HttpStatus.BAD_REQUEST);
             }
 
-            processBuffer.delete(0, processBuffer.length());
+            clearProcessBuffer(processBuffer);
         } else {
             processBuffer.append((char) aByte);
 
@@ -127,5 +162,9 @@ public class HttpRequestParser {
             if (this.method != null && this.uri != null && this.protocol == null && processBuffer.length() > HttpProtocol.MAX_SIZE)
                 throw HttpRequestParserException.INVALID_HTTP_VERSION;
         }
+    }
+
+    private void clearProcessBuffer(StringBuilder processBuffer) {
+        processBuffer.delete(0, processBuffer.length());
     }
 }
